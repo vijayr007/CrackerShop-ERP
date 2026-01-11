@@ -1,0 +1,18 @@
+How to use this project:
+Initial Setup:
+
+Save the code as cracker_app.py.
+
+The first time you run it, use Username: admin and Password: admin123.
+
+CSV Import Format:
+
+To use the "Import CSV" button, create an Excel/CSV file with these exact column headers: name, category, price, stock.
+
+Persistence:
+
+The application creates a file named cracker_shop.db in the same folder. This file contains all your data. If you want to back up your shop data, simply copy this file.
+
+Security:
+
+The Staff role is restricted. If you log in as staff, you will see that "Reports" and "User Management" are missing from the sidebar.
