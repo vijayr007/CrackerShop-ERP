@@ -1,8 +1,9 @@
 import customtkinter as ctk
 from tkinter import ttk, messagebox
-from datetime import datetime
 import os
-from fpdf import FPDF
+import csv
+import time
+from datetime import datetime
 
 class ReportsModule:
     def __init__(self, main_view, db):
@@ -10,101 +11,128 @@ class ReportsModule:
         self.db = db
 
     def render(self):
-        # Clear existing widgets to refresh the view
+        """Method called by main.py to display the Reporting UI"""
         for widget in self.main_view.winfo_children():
             widget.destroy()
 
-        ctk.CTkLabel(self.main_view, text="Detailed Sales Report", font=("Arial", 22, "bold")).pack(pady=10)
+        ctk.CTkLabel(self.main_view, text="Advanced Sales Reports", font=("Arial", 22, "bold")).pack(pady=10)
         
-        # Summary Header (Optional but useful)
-        self.db.cursor.execute("SELECT SUM(total) FROM sales")
-        total_revenue = self.db.cursor.fetchone()[0] or 0
-        ctk.CTkLabel(self.main_view, text=f"Total Revenue: ₹{total_revenue:.2f}", 
-                     font=("Arial", 16), text_color="#2ecc71").pack(pady=5)
+        # --- Search & Filter Section ---
+        filter_frame = ctk.CTkFrame(self.main_view)
+        filter_frame.pack(fill="x", padx=20, pady=10)
 
-        # Treeview setup for UI data display
-        columns = ("Bill ID", "Item", "Qty", "Total", "Date")
-        tree = ttk.Treeview(self.main_view, columns=columns, show='headings')
-        for col in columns: 
-            tree.heading(col, text=col)
-            tree.column(col, width=150, anchor="center")
-        
-        # Querying data from database
-        self.db.cursor.execute("SELECT bill_id, item_name, quantity, total, date FROM sales ORDER BY id DESC")
-        for row in self.db.cursor.fetchall(): 
-            tree.insert("", "end", values=row)
-            
-        tree.pack(fill="both", expand=True, padx=20, pady=10)
+        # Bill ID Search
+        ctk.CTkLabel(filter_frame, text="Bill ID:").grid(row=0, column=0, padx=5)
+        self.search_bill = ctk.CTkEntry(filter_frame, placeholder_text="Search...", width=100)
+        self.search_bill.grid(row=0, column=1, padx=5)
+        self.search_bill.bind("<KeyRelease>", lambda e: self.refresh_data())
 
-        # Action Buttons for PDF Export
-        btn_frame = ctk.CTkFrame(self.main_view)
-        btn_frame.pack(pady=10, fill="x", padx=20)
-        
-        ctk.CTkButton(btn_frame, text="Export Today's PDF", 
-                      command=lambda: self.export_report_pdf("Day")).grid(row=0, column=0, padx=20, pady=10)
-        
-        ctk.CTkButton(btn_frame, text="Export Monthly PDF", 
-                      command=lambda: self.export_report_pdf("Month")).grid(row=0, column=1, padx=20, pady=10)
+        # Date Filter Labels & Entries
+        ctk.CTkLabel(filter_frame, text="From:").grid(row=0, column=2, padx=5)
+        self.date_from = ctk.CTkEntry(filter_frame, placeholder_text="YYYY-MM-DD", width=110)
+        self.date_from.grid(row=0, column=3, padx=5)
 
-    def export_report_pdf(self, period="Day"):
+        ctk.CTkLabel(filter_frame, text="To:").grid(row=0, column=4, padx=5)
+        self.date_to = ctk.CTkEntry(filter_frame, placeholder_text="YYYY-MM-DD", width=110)
+        self.date_to.grid(row=0, column=5, padx=5)
+
+        # Action Buttons
+        ctk.CTkButton(filter_frame, text="Apply Filter", width=100, fg_color="#1f538d", 
+                      command=self.refresh_data).grid(row=0, column=6, padx=5)
+        
+        ctk.CTkButton(filter_frame, text="Reset", width=80, fg_color="#7f8c8d", 
+                      command=self.reset_filters).grid(row=0, column=7, padx=5)
+
+        # --- Data Table ---
+        columns = ("Bill ID", "Item Name", "Qty", "Total", "Date")
+        self.tree = ttk.Treeview(self.main_view, columns=columns, show='headings')
+        for col in columns:
+            self.tree.heading(col, text=col)
+            self.tree.column(col, width=150, anchor="center")
+        
+        self.tree.pack(fill="both", expand=True, padx=20, pady=10)
+
+        # --- Footer Summary & Export ---
+        footer_frame = ctk.CTkFrame(self.main_view, fg_color="transparent")
+        footer_frame.pack(fill="x", padx=20, pady=10)
+
+        self.revenue_lbl = ctk.CTkLabel(footer_frame, text="Revenue: ₹0.00", font=("Arial", 18, "bold"), text_color="#2ecc71")
+        self.revenue_lbl.pack(side="left")
+
+        ctk.CTkButton(footer_frame, text="📊 Export Full Order CSV", fg_color="#27ae60", 
+                      command=self.export_csv).pack(side="right", padx=10)
+
+        self.refresh_data() 
+
+    def reset_filters(self):
+        """Clears all input fields and reloads the full dataset"""
+        self.search_bill.delete(0, 'end')
+        self.date_from.delete(0, 'end')
+        self.date_to.delete(0, 'end')
+        self.refresh_data()
+
+    def refresh_data(self):
+        """Dynamic Search and Date Filtering"""
+        bill_val = self.search_bill.get()
+        d_from = self.date_from.get()
+        d_to = self.date_to.get()
+
+        query = "SELECT bill_id, item_name, quantity, total, date FROM sales WHERE 1=1"
+        params = []
+
+        if bill_val:
+            query += " AND bill_id LIKE ?"
+            params.append(f"%{bill_val}%")
+        
+        if d_from and d_to:
+            query += " AND date BETWEEN ? AND ?"
+            params.extend([d_from, d_to])
+
+        query += " ORDER BY id DESC"
+        
+        for i in self.tree.get_children():
+            self.tree.delete(i)
+        
+        self.db.cursor.execute(query, params)
+        rows = self.db.cursor.fetchall()
+        
+        total_revenue = 0
+        for row in rows:
+            self.tree.insert("", "end", values=row)
+            total_revenue += row[3]
+        
+        self.revenue_lbl.configure(text=f"Total Revenue: ₹{total_revenue:.2f}")
+
+    def export_csv(self):
+        """Logic to export ALL rows matching the selected Bill ID"""
+        selected_item = self.tree.selection()
+        
+        if not selected_item:
+            messagebox.showwarning("Selection Required", "Please click a row from the order you want to export.")
+            return
+
+        # Get Bill ID from the selected row
+        bill_id = self.tree.item(selected_item)['values'][0]
+
+        # Fetch every item sold under this specific bill
+        self.db.cursor.execute(
+            "SELECT bill_id, item_name, quantity, total, date FROM sales WHERE bill_id = ?", 
+            (bill_id,)
+        )
+        data = self.db.cursor.fetchall()
+
+        if not os.path.exists("exports"):
+            os.makedirs("exports")
+        
+        path = f"exports/Full_Order_{bill_id}.csv"
+
         try:
-            # Determine date filter
-            if period == "Day":
-                date_filter = datetime.now().strftime("%Y-%m-%d")
-            else:
-                date_filter = datetime.now().strftime("%Y-%m") # Matches any day in the current month
-
-            # Fetch filtered data
-            self.db.cursor.execute("SELECT bill_id, item_name, quantity, total, date FROM sales WHERE date LIKE ?", (f"{date_filter}%",))
-            rows = self.db.cursor.fetchall()
-
-            if not rows:
-                messagebox.showwarning("No Data", f"No sales found for this {period.lower()}.")
-                return
-
-            # Initialize PDF
-            pdf = FPDF()
-            pdf.add_page()
-            pdf.set_font("Arial", 'B', 16)
-            pdf.cell(190, 10, f"Cracker Shop Sales Report ({period} View)", ln=True, align='C')
-            pdf.set_font("Arial", '', 10)
-            pdf.cell(190, 10, f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True, align='C')
-            pdf.ln(5)
-
-            # PDF Table Header
-            pdf.set_fill_color(200, 200, 200)
-            pdf.set_font("Arial", 'B', 10)
-            pdf.cell(40, 10, "Bill ID", 1, 0, 'C', True)
-            pdf.cell(60, 10, "Item Name", 1, 0, 'C', True)
-            pdf.cell(20, 10, "Qty", 1, 0, 'C', True)
-            pdf.cell(30, 10, "Total", 1, 0, 'C', True)
-            pdf.cell(40, 10, "Date", 1, 1, 'C', True)
-
-            # Table Rows
-            pdf.set_font("Arial", '', 10)
-            grand_total = 0
-            for row in rows:
-                pdf.cell(40, 8, str(row[0]), 1)
-                pdf.cell(60, 8, str(row[1]), 1)
-                pdf.cell(20, 8, str(row[2]), 1, 0, 'C')
-                pdf.cell(30, 8, f"{row[3]:.2f}", 1, 0, 'R')
-                pdf.cell(40, 8, str(row[4]), 1, 1, 'C')
-                grand_total += row[3]
-
-            pdf.set_font("Arial", 'B', 11)
-            pdf.cell(120, 10, "Total Revenue:", 1, 0, 'R')
-            pdf.cell(70, 10, f"Rs. {grand_total:.2f}", 1, 1, 'C')
-
-            # Ensure directory exists and save
-            if not os.path.exists('reports'):
-                os.makedirs('reports')
+            with open(path, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(["Bill ID", "Item Name", "Qty", "Total Price", "Date"])
+                writer.writerows(data)
             
-            filename = f"reports/Sales_Report_{period}_{date_filter}.pdf"
-            pdf.output(filename)
-            
-            # Open PDF automatically
-            os.startfile(filename)
-            messagebox.showinfo("Success", f"Report saved: {filename}")
-
+            messagebox.showinfo("Export Success", f"Exported {len(data)} items for Order {bill_id}")
+            os.startfile("exports")
         except Exception as e:
-            messagebox.showerror("Export Error", f"An error occurred: {str(e)}")
+            messagebox.showerror("Error", f"Failed to save. Close the file if it is open.\n{e}")
