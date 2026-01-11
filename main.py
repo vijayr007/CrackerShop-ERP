@@ -5,6 +5,8 @@ from billing import BillingModule
 from reports import ReportsModule
 from users import UserManagementModule
 from categories import CategoryModule
+from customers import CustomerModule
+from dashboard import DashboardModule  # New Dashboard Import
 from tkinter import messagebox
 import logging
 
@@ -41,41 +43,52 @@ class CrackerApp(ctk.CTk):
         self.username = username
         self.user_role = user_role
         
-        self.title(f"CrackerShop - {self.username}")
+        self.title(f"CrackerShop - {self.username} ({self.user_role})")
         self.geometry("1200x750")
 
-        # Layout
-        self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0)
+        # Sidebar setup
+        self.sidebar = ctk.CTkFrame(self, width=220, corner_radius=0)
         self.sidebar.pack(side="left", fill="y")
+        
+        # Main content area setup
         self.main_view = ctk.CTkFrame(self, corner_radius=15)
         self.main_view.pack(side="right", fill="both", expand=True, padx=20, pady=20)
 
-        # Menu Buttons
+        # Sidebar Menu
         ctk.CTkLabel(self.sidebar, text="MAIN MENU", font=("Arial", 16, "bold")).pack(pady=20)
         
-        # Public Buttons
-        ctk.CTkButton(self.sidebar, text="💳 Billing", command=lambda: self.load_module("bill")).pack(fill="x", padx=10, pady=5)
+        # Dashboard (Public)
+        ctk.CTkButton(self.sidebar, text="📊 Dashboard", command=lambda: self.load_module("dash")).pack(fill="x", padx=10, pady=5)
         
-        # Admin Only Buttons
+        # Billing & Customers (Public)
+        ctk.CTkButton(self.sidebar, text="💳 Billing", command=lambda: self.load_module("bill")).pack(fill="x", padx=10, pady=5)
+        ctk.CTkButton(self.sidebar, text="👥 Customers", command=lambda: self.load_module("cust")).pack(fill="x", padx=10, pady=5)
+        
+        # Admin Only Section
         if self.user_role == "Admin":
+            ctk.CTkLabel(self.sidebar, text="ADMIN TOOLS", font=("Arial", 12, "italic"), text_color="gray").pack(pady=(15, 5))
             ctk.CTkButton(self.sidebar, text="📦 Inventory", command=lambda: self.load_module("inv")).pack(fill="x", padx=10, pady=5)
             ctk.CTkButton(self.sidebar, text="📁 Categories", command=lambda: self.load_module("cat")).pack(fill="x", padx=10, pady=5)
             ctk.CTkButton(self.sidebar, text="📊 Reports", command=lambda: self.load_module("rep")).pack(fill="x", padx=10, pady=5)
-            ctk.CTkButton(self.sidebar, text="👥 Users", command=lambda: self.load_module("usr")).pack(fill="x", padx=10, pady=5)
+            ctk.CTkButton(self.sidebar, text="⚙️ Users", command=lambda: self.load_module("usr")).pack(fill="x", padx=10, pady=5)
         
-        ctk.CTkButton(self.sidebar, text="Logout", fg_color="#c0392b", command=self.logout).pack(side="bottom", pady=20)
+        ctk.CTkButton(self.sidebar, text="Logout", fg_color="#c0392b", hover_color="#962d22", command=self.logout).pack(side="bottom", pady=20)
         
-        # Initial View
-        self.load_module("bill")
+        # Load Dashboard by default on startup
+        self.load_module("dash")
 
     def load_module(self, mod):
-        # Clear existing widgets
+        # Clean current screen
         for widget in self.main_view.winfo_children():
             widget.destroy()
             
-        # Router logic - Removed duplicated "cat" block
-        if mod == "bill":
-            BillingModule(self.main_view, db).render()
+        # Module Routing
+        if mod == "dash":
+            DashboardModule(self.main_view, db).render()
+        elif mod == "bill":
+            BillingModule(self.main_view, db, self.username).render()
+        elif mod == "cust":
+            CustomerModule(self.main_view, db).render()
         elif mod == "inv":
             InventoryModule(self.main_view, db).render()
         elif mod == "cat":
@@ -91,6 +104,9 @@ class CrackerApp(ctk.CTk):
         main()
 
 def main():
+    # Setup log formatting
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+    
     app = LoginWindow(lambda u, r: CrackerApp(u, r).mainloop())
     app.mainloop()
 
