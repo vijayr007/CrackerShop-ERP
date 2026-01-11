@@ -1,0 +1,8 @@
+---
+
+### How to use this:
+1. Create a new file in your project folder called `README.md`.
+2. Copy and paste the code above into it.
+3. If you have a GitHub repository, this will now appear as the homepage of your project.
+
+**Would you like me to add a section to the README on how to troubleshoot common SQLite errors?**

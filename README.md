@@ -1,66 +1,73 @@
-🧨 CrackerShop ERP v2.0
-A modern, modular Point of Sale (POS) and Inventory Management System designed specifically for firework retailers. Built with Python and CustomTkinter, this application provides a sleek dark-mode interface with local database persistence.
+# Fireworks ERP - CrackerShop Management System
 
-✨ Features
-Modular Architecture: Organized into separate files for Database, Inventory, Billing, and Reports.
+A professional Inventory, Billing, and User Management system built with Python and CustomTkinter. Designed specifically for retail shops requiring real-time stock tracking and sales reporting.
 
-SKU/Product Code Support: Every item has a unique code for fast lookup.
 
-Dynamic Billing: A real-time shopping cart system that allows you to add, search, and cancel items before finalizing a sale.
 
-Inventory Control: Automated stock deduction upon sale completion and manual stock entry.
+## 🚀 Features
 
-Sales Reporting: Track total revenue and view transaction history.
+- **Dynamic Billing Terminal**: 
+    - Partial search for products (search by name or code).
+    - Category-based filtering.
+    - Live stock validation (prevents over-selling based on cart contents).
+- **Inventory Management**: 
+    - Full CRUD (Add/Update/Delete) for products.
+    - Bulk data handling via **CSV Import/Export**.
+- **Advanced Reporting**: 
+    - Filter sales by Bill ID, Category, or Date Range.
+    - Generate professional **PDF Reports** with automatic table formatting.
+    - Export filtered data to CSV.
+- **User Management**: 
+    - Role-based access control (Admin vs. Staff).
+    - Secure user creation and modification.
+- **Database**: 
+    - Local SQLite implementation for speed and reliability.
 
-Database Persistence: Powered by SQLite3 (no external server required).
+## 🛠️ Installation
 
-📂 Project Structure
+1. **Clone the repository**:
+   ```bash
+   git clone [https://github.com/yourusername/crackershop-erp.git](https://github.com/yourusername/crackershop-erp.git)
+   cd crackershop-erp
+
+reate a Virtual Environment:
+
+Bash
+
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+Install Dependencies:
+
+Bash
+
+pip install -r requirements.txt
+Initialize Database: The system will automatically create crackershop.db on the first run. Ensure database.py is present.
+
+📁 Project Structure
 Plaintext
 
-cracker_shop/
-├── main.py              # Entry point & Navigation
-├── database.py          # SQLite schema & connection
-├── inventory.py         # Stock management module
-├── billing.py           # POS & Cart logic
-├── reports.py           # Sales analytics module
-└── cracker_shop.db      # Local database (auto-generated)
-🚀 Getting Started
-Prerequisites
-Python 3.8 or higher
+├── main.py              # Application entry point & Login logic
+├── database.py          # SQLite connection and schema setup
+├── billing.py           # POS / Billing Terminal logic
+├── inventory.py         # Stock management & CSV handling
+├── categories.py        # Category management
+├── reports.py           # Sales analysis & PDF generation
+├── users.py             # User accounts & Role management
+├── exports/             # Generated PDFs & CSVs (Git Ignored)
+├── .gitignore           # Files excluded from Version Control
+└── requirements.txt     # List of Python dependencies
+📖 Usage
+Login: Use the default admin credentials (configured in your database).
 
-Required Libraries:
+Setup: Go to Categories to define your product types (e.g., Rockets, Sparklers).
 
-Bash
+Inventory: Use Import CSV to quickly load your stock or add items manually.
 
-pip install customtkinter pandas
-Installation
-Clone the repository or download the source code.
+Billing: Search for items in the Billing tab. The system will show you "Effective Available Stock" (Total Stock minus what's currently in your cart).
 
-Navigate to the project folder.
+Reports: Use the Reports tab to view revenue and export PDFs for your records.
 
-Run the application:
+📝 Important Notes
+Exports: All generated reports are saved in the exports/ folder. This folder is ignored by Git to keep the repo clean.
 
-Bash
-
-python main.py
-🖥️ Usage Guide
-Login: Use the default credentials (Admin / admin123).
-
-Add Stock: Go to the Inventory tab to enter your products with unique codes.
-
-Create a Bill: In the Billing tab, search for a product by its code or name, enter the quantity, and add it to the cart.
-
-Checkout: Click Complete Sale & Print. This will deduct stock and save the transaction.
-
-View Sales: Check the Reports tab to see your total revenue.
-
-🛠️ Building the Executable
-To create a standalone Windows .exe file:
-
-Install PyInstaller: pip install pyinstaller
-
-Run the build command:
-
-Bash
-
-pyinstaller --noconsole --onefile --name "CrackerShop_Pro" main.py
+Logs: System errors and transaction logs are saved in app.log.   

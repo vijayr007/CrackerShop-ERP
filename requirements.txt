@@ -1,0 +1,4 @@
+customtkinter==5.2.2
+fpdf2==2.7.9
+packaging==23.2
+darkdetect==0.8.0

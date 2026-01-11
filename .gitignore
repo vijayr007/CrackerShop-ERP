@@ -1,0 +1,18 @@
+# Ignore the generated reports directory
+exports/
+
+# Ignore SQLite database files (if you want to keep data local only)
+*.db
+
+# Ignore log files
+*.log
+app.log
+
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
